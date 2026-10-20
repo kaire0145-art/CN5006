@@ -10,7 +10,8 @@ const PersonSchema = new mongoose.Schema({
     },
     age: Number,
     gender: String,
-    salary: Number
+    salary: Number,
+    city: String
 });
 
 // 2. Create the Person model
@@ -26,7 +27,8 @@ async function insertOne() {
         name: 'Yousuf',
         age: 44,
         gender: 'Male',
-        salary: 3456
+        salary: 3456,
+        city: 'London'
     });
 
     const savedDoc = await person.save();
@@ -35,13 +37,37 @@ async function insertOne() {
     console.log(savedDoc);
 }
 
-// 4. Insert many documents
+// 4. Insert multiple documents
 async function insertMany() {
     const manyPersons = [
-        { name: 'SimonNHQ', age: 42, gender: 'Male', salary: 3456 },
-        { name: 'NeeshaNN', age: 53, gender: 'Female', salary: 1000 },
-        { name: 'MaryNHQ', age: 27, gender: 'Female', salary: 5402 },
-        { name: 'MikeNJQ', age: 40, gender: 'Male', salary: 4519 }
+        {
+            name: 'SimonNHQ',
+            age: 42,
+            gender: 'Male',
+            salary: 3456,
+            city: 'London'
+        },
+        {
+            name: 'NeeshaNN',
+            age: 53,
+            gender: 'Female',
+            salary: 1000,
+            city: 'Romford'
+        },
+        {
+            name: 'MaryNHQ',
+            age: 27,
+            gender: 'Female',
+            salary: 5402,
+            city: 'Manchester'
+        },
+        {
+            name: 'MikeNJQ',
+            age: 40,
+            gender: 'Male',
+            salary: 4519,
+            city: 'London'
+        }
     ];
 
     const result = await Person.insertMany(manyPersons);
@@ -54,14 +80,17 @@ async function insertMany() {
 async function findAll() {
     const docs = await Person.find({})
         .sort({ salary: 1 })
-        .select('name salary age')
+        .select('name salary age city')
         .limit(100);
 
-    console.log('\n--- All Documents (Sorted by Salary) ---');
+    console.log('\n--- All Documents ---');
 
     docs.forEach(doc => {
         console.log(
-            `Age: ${doc.age}, Name: ${doc.name}, Salary: ${doc.salary}`
+            `Name: ${doc.name}, ` +
+            `Age: ${doc.age}, ` +
+            `Salary: ${doc.salary}, ` +
+            `City: ${doc.city}`
         );
     });
 }
@@ -75,14 +104,17 @@ async function findFemalesOver30() {
         age: { $gte: givenAge }
     })
         .sort({ salary: 1 })
-        .select('name salary age')
+        .select('name salary age city')
         .limit(10);
 
     console.log(`\n--- Females Aged ${givenAge} or Above ---`);
 
     docs.forEach(doc => {
         console.log(
-            `Age: ${doc.age}, Name: ${doc.name}, Salary: ${doc.salary}`
+            `Name: ${doc.name}, ` +
+            `Age: ${doc.age}, ` +
+            `Salary: ${doc.salary}, ` +
+            `City: ${doc.city}`
         );
     });
 }
@@ -117,7 +149,33 @@ async function updateManyPersons() {
     console.log(`Documents modified: ${result.modifiedCount}`);
 }
 
-// 10. Main function
+// 10. Find people from a specific city
+async function findPeopleByCity(cityName) {
+    const docs = await Person.find({
+        city: cityName
+    })
+        .select('name age gender salary city')
+        .sort({ name: 1 });
+
+    console.log(`\n--- People from ${cityName} ---`);
+
+    if (docs.length === 0) {
+        console.log(`No people found in ${cityName}.`);
+        return;
+    }
+
+    docs.forEach(doc => {
+        console.log(
+            `Name: ${doc.name}, ` +
+            `Age: ${doc.age}, ` +
+            `Gender: ${doc.gender}, ` +
+            `Salary: ${doc.salary}, ` +
+            `City: ${doc.city}`
+        );
+    });
+}
+
+// 11. Main function
 async function main() {
     try {
         // Connect to MongoDB
@@ -125,19 +183,29 @@ async function main() {
 
         console.log(`Connected to ${MONGO_URI}`);
 
-        // Run the operations
-        await insertOne();
+        // INSERT DATA
+        // Uncomment these two lines when you need to insert records.
+        // Run them once, then comment them out again to avoid duplicates.
 
-        await insertMany();
+        // await insertOne();
+        // await insertMany();
 
+        // RETRIEVE DATA
         await findAll();
 
+        // Find females aged 30 or above
         await findFemalesOver30();
 
+        // Count all documents
         await countDocuments();
 
-        // These operations change data.
-        // Uncomment them when you want to test them.
+        // PORTFOLIO TASK:
+        // Find only people from London
+        await findPeopleByCity('London');
+
+        // OPTIONAL UPDATE AND DELETE OPERATIONS
+        // Uncomment these lines only when required.
+
         // await updateManyPersons();
         // await deleteManyPersons();
 
@@ -145,11 +213,13 @@ async function main() {
         console.error('\nError:', err);
     } finally {
         // Close the database connection
-        await mongoose.connection.close();
+        if (mongoose.connection.readyState !== 0) {
+            await mongoose.connection.close();
+        }
 
         console.log('\nConnection closed');
     }
 }
 
-// Start the program
+// Run the program
 main();
